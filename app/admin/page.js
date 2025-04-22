@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import FaceLogin from '@/components/FaceLogin';
+
 
 const AdminDashboard = () => {
   const [authenticated, setAuthenticated] = useState(false);
