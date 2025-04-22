@@ -5,33 +5,42 @@ import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const [username, setUsername] = useState("");
-  const [action, setAction] = useState("logged in");
+  const [action, setAction] = useState("logged in"); // Default action is "logged in"
+  const [loginTime, setLoginTime] = useState(""); // State to store the login time
   const router = useRouter();
 
   useEffect(() => {
     const storedName = localStorage.getItem("username") || localStorage.getItem("scannedName");
-    const lastAction = localStorage.getItem("lastAction") || "logged in";
+    const lastAction = localStorage.getItem("lastAction") || "logged in"; // Default to "logged in"
+    const storedLoginTime = localStorage.getItem("loginTime"); // Retrieve the login time from localStorage
 
     if (!storedName) {
-      router.push("/signin"); // Redirect if not signed in
+      router.push("/signin"); // Redirect to signin if no user is found
     } else {
       setUsername(storedName);
-      setAction(lastAction);
+      setAction(lastAction); // Set action to the last action stored in localStorage
+      setLoginTime(storedLoginTime); // Set the login time
     }
-  }, []);
+  }, [router]);
 
   const handleLogout = () => {
-    localStorage.setItem("lastAction", "logged out");
+    localStorage.setItem("lastAction", "logged out"); // Set lastAction to "logged out"
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("username");
     localStorage.removeItem("scannedName");
+    localStorage.removeItem("loginTime"); // Remove the login time
     router.push("/signin");
   };
 
   return (
     <div style={{ textAlign: "center", padding: "40px" }}>
       <h1>🎉 Welcome {username}!</h1>
-      <p>You have successfully {action}.</p>
+      <p>You have successfully {action}.</p> {/* Display the current action */}
+      {loginTime && (
+        <p>
+          You logged in at: <strong>{loginTime}</strong>
+        </p> // Display the login time if available
+      )}
       <button onClick={handleLogout} style={{ marginTop: "20px", padding: "10px 20px" }}>
         🚪 Logout
       </button>

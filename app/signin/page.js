@@ -1,51 +1,69 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/library';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import { BrowserMultiFormatReader } from "@zxing/library";
+import { useRouter } from "next/navigation";
 
 export default function SignIn() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [scannedResult, setScannedResult] = useState(null);
+  const [isScanning, setIsScanning] = useState(true); // Track scanning state
   const router = useRouter();
 
+  // Start the QR code scanning process
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader();
+
+    // List video input devices (cameras) and choose the first one
     codeReader.listVideoInputDevices().then((videoInputDevices) => {
       if (videoInputDevices.length > 0) {
         const selectedDeviceId = videoInputDevices[0].deviceId;
-        codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+
+        // Start decoding video from the selected device
+        codeReader.decodeFromVideoDevice(selectedDeviceId, "video", (result, err) => {
           if (result) {
             setScannedResult(result.getText());
+            setIsScanning(false); // Stop scanning after result is found
+            playScanSound(); // Play success sound
+            // Optionally, autofill the username and password from the scanned result
+            // setUsername(result.getText()); // Example: assuming the scanned QR provides the username
+            // setPassword('yourDefaultPassword'); // If the scan is used to set password (optional)
           }
           if (err && !(err instanceof DOMException)) {
-            console.error('QR scan error:', err);
+            console.error("QR scan error:", err);
           }
         });
       }
     });
 
+    // Cleanup on component unmount
     return () => {
       codeReader.reset();
     };
   }, []);
 
-  const getCurrentTimestamp = () => {
-    return new Date().toLocaleString();
-  };
+  const getCurrentTimestamp = () => new Date().toLocaleString();
 
   const handleSignIn = (e) => {
     e.preventDefault();
     if (username && password) {
       const timestamp = getCurrentTimestamp();
-      localStorage.setItem('loggedIn', 'true');
-      localStorage.setItem('username', username);
-      localStorage.setItem('loginTime', timestamp);
+      localStorage.setItem("loggedIn", "true");
+      localStorage.setItem("username", username);
+      localStorage.setItem("loginTime", timestamp);
 
       console.log(`User logged in at: ${timestamp}`);
-      router.push('/dashboard');
+      router.push("/dashboard");
+    } else {
+      alert("Please fill in both username and password.");
     }
+  };
+
+  // Function to play sound on successful scan
+  const playScanSound = () => {
+    const sound = new Audio("/success-sound.mp3"); // Ensure you have a sound file
+    sound.play();
   };
 
   return (
@@ -58,7 +76,9 @@ export default function SignIn() {
                 <h2 className="text-center mb-4">Sign In</h2>
                 <form onSubmit={handleSignIn}>
                   <div className="mb-3">
-                    <label htmlFor="username" className="form-label">Username</label>
+                    <label htmlFor="username" className="form-label">
+                      Username
+                    </label>
                     <input
                       type="text"
                       id="username"
@@ -69,7 +89,9 @@ export default function SignIn() {
                     />
                   </div>
                   <div className="mb-3">
-                    <label htmlFor="password" className="form-label">Password</label>
+                    <label htmlFor="password" className="form-label">
+                      Password
+                    </label>
                     <input
                       type="password"
                       id="password"
@@ -79,7 +101,9 @@ export default function SignIn() {
                       required
                     />
                   </div>
-                  <button type="submit" className="btn btn-primary w-100">Sign In</button>
+                  <button type="submit" className="btn btn-primary w-100">
+                    Sign In
+                  </button>
                 </form>
 
                 <hr className="my-4" />
@@ -88,6 +112,13 @@ export default function SignIn() {
                 <div className="d-flex justify-content-center mb-2">
                   <video id="video" width="300" height="200" className="border rounded" />
                 </div>
+
+                {/* Show scanning feedback */}
+                {isScanning && (
+                  <p className="text-center text-warning">Scanning...</p>
+                )}
+
+                {/* Show scanned result */}
                 {scannedResult && (
                   <p className="text-success text-center">
                     Scanned result: <strong>{scannedResult}</strong>
