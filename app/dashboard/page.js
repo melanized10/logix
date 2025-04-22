@@ -5,20 +5,17 @@ import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const [username, setUsername] = useState("");
-  const [action, setAction] = useState("logged in"); // Default action is "logged in"
   const [loginTime, setLoginTime] = useState(""); // State to store the login time
   const router = useRouter();
 
   useEffect(() => {
     const storedName = localStorage.getItem("username") || localStorage.getItem("scannedName");
-    const lastAction = localStorage.getItem("lastAction") || "logged in"; // Default to "logged in"
     const storedLoginTime = localStorage.getItem("loginTime"); // Retrieve the login time from localStorage
 
     if (!storedName) {
       router.push("/signin"); // Redirect to signin if no user is found
     } else {
       setUsername(storedName);
-      setAction(lastAction); // Set action to the last action stored in localStorage
       setLoginTime(storedLoginTime); // Set the login time
     }
   }, [router]);
@@ -35,7 +32,7 @@ export default function Dashboard() {
   return (
     <div style={{ textAlign: "center", padding: "40px" }}>
       <h1>🎉 Welcome {username}!</h1>
-      <p>You have successfully {action}.</p> {/* Display the current action */}
+      <p>You are currently logged in.</p> {/* Always display "logged in" */}
       {loginTime && (
         <p>
           You logged in at: <strong>{loginTime}</strong>
