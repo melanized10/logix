@@ -53,7 +53,16 @@ export default function SignIn() {
       localStorage.setItem('loginTime', timestamp);
 
       console.log(`User logged in at: ${timestamp}`);
-      router.push('/dashboard');
+
+      // Show success alert
+      alert(`Logged in successfully as ${username}`);
+
+      // Check if the logged-in user is admin
+      if (username === 'admin') {
+        router.push('/admin');  // Redirect to admin dashboard
+      } else {
+        router.push('/dashboard');  // Redirect to user dashboard
+      }
     }
   };
 
