@@ -14,9 +14,15 @@ export default function SignIn() {
   // Load face-api.js models
   useEffect(() => {
     const loadModels = async () => {
-      await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
-      await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
-      await faceapi.nets.faceRecognitionNet.loadFromUri("/models");
+      try {
+        console.log("Loading face-api.js models...");
+        await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
+        await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
+        await faceapi.nets.faceRecognitionNet.loadFromUri("/models");
+        console.log("Models loaded successfully.");
+      } catch (error) {
+        console.error("Error loading models: ", error);
+      }
     };
     loadModels();
 
@@ -24,8 +30,12 @@ export default function SignIn() {
 
     // Stream webcam to video element
     const streamWebcam = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoElement.srcObject = stream;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoElement.srcObject = stream;
+      } catch (error) {
+        console.error("Error accessing webcam: ", error);
+      }
     };
     streamWebcam();
 
@@ -39,41 +49,61 @@ export default function SignIn() {
 
   // Handle face scan and comparison with stored faces
   const handleScanFace = async () => {
-    const videoElement = document.getElementById("videoElement");
-    const detections = await faceapi
-      .detectSingleFace(videoElement)
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+    try {
+      console.log("Starting face scan...");
 
-    if (!detections) {
-      setScannedResult("No face detected. Please try again.");
-      return;
-    }
+      const videoElement = document.getElementById("videoElement");
+      const detections = await faceapi
+        .detectSingleFace(videoElement)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
 
-    const inputDescriptor = detections.descriptor;
-    const storedFaces = JSON.parse(localStorage.getItem("registeredFaces")) || [];
-    let bestMatch = null;
-    let smallestDistance = 1.0;
-
-    // Compare the input face descriptor with stored descriptors
-    storedFaces.forEach((face) => {
-      const distance = faceapi.euclideanDistance(inputDescriptor, new Float32Array(face.descriptor));
-      if (distance < smallestDistance && distance < 0.5) {
-        smallestDistance = distance;
-        bestMatch = face.name;
+      if (!detections) {
+        console.log("No face detected.");
+        setScannedResult("No face detected. Please try again.");
+        return;
       }
-    });
 
-    if (bestMatch) {
-      const timestamp = new Date().toLocaleString();
-      localStorage.setItem("loggedInUser", bestMatch);
-      localStorage.setItem("loginTime", timestamp);
-      setLoginTime(timestamp);
-      setScannedResult(`Welcome, ${bestMatch}!`);
-      alert("Face matched! Login successful.");
-      router.push("/dashboard");
-    } else {
-      setScannedResult("No matching face found.");
+      const inputDescriptor = detections.descriptor;
+      const storedFaces = JSON.parse(localStorage.getItem("registeredFaces")) || [];
+      let bestMatch = null;
+      let smallestDistance = 1.0;
+
+      // Compare the input face descriptor with stored descriptors
+      storedFaces.forEach((face) => {
+        const distance = faceapi.euclideanDistance(inputDescriptor, new Float32Array(face.descriptor));
+        if (distance < smallestDistance && distance < 0.5) {
+          smallestDistance = distance;
+          bestMatch = face;  // Save the entire face data (name, image, descriptor)
+        }
+      });
+
+      if (bestMatch) {
+        const timestamp = new Date().toLocaleString();
+        localStorage.setItem("loggedInUser", bestMatch.name); // Store name in localStorage
+        localStorage.setItem("loginTime", timestamp); // Store login time
+        setLoginTime(timestamp);
+        setScannedResult(`Welcome, ${bestMatch.name}!`);
+
+        // You can now retrieve the employee's image as well
+        const employeeImage = bestMatch.image;
+
+        // Display the employee's image (this could be done dynamically in your UI)
+        const imageElement = document.createElement("img");
+        imageElement.src = employeeImage;
+        imageElement.alt = "Employee Image";
+        imageElement.width = 100;
+        document.getElementById("employeeImageContainer").appendChild(imageElement);
+
+        console.log("Face matched! Login successful.");
+        alert("Face matched! Login successful.");
+        router.push("/dashboard");
+      } else {
+        console.log("No matching face found.");
+        setScannedResult("No matching face found.");
+      }
+    } catch (error) {
+      console.error("Error during face scan or comparison: ", error);
     }
   };
 
@@ -136,6 +166,12 @@ export default function SignIn() {
           </button>
         </div>
       </div>
+
+      {/* Employee Image Preview */}
+      <div
+        id="employeeImageContainer"
+        style={{ textAlign: "center", marginTop: "20px" }}
+      ></div>
     </div>
   );
 }
