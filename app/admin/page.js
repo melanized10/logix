@@ -1,15 +1,27 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import * as faceapi from 'face-api.js';
 
-const AdminDashboard = () => {
-  const [uploadStatus, setUploadStatus] = useState('');
+const AdminPanel = () => {
+  const [image, setImage] = useState(null);
   const [employeeName, setEmployeeName] = useState('');
-  const [employees, setEmployees] = useState([]);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [registeredFaces, setRegisteredFaces] = useState([]);
+  const [deleteName, setDeleteName] = useState('');
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('employees') || '[]');
-    setEmployees(saved);
+    // Load face-api.js models when the component mounts
+    const loadModels = async () => {
+      await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+      await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    };
+    loadModels();
+
+    // Load registered faces from localStorage
+    const savedFaces = JSON.parse(localStorage.getItem('registeredFaces') || '[]');
+    setRegisteredFaces(savedFaces);
   }, []);
 
   const handleFileUpload = async (e) => {
@@ -20,61 +32,110 @@ const AdminDashboard = () => {
     }
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Image = reader.result;
-      const newEmployee = {
-        name: employeeName,
-        image: base64Image,
+    reader.onloadend = async () => {
+      const img = new Image();
+      img.src = reader.result;
+      img.onload = async () => {
+        // Detect face from uploaded image
+        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+        if (!detections) {
+          setUploadStatus('❌ No face detected. Please upload a valid passport image.');
+          return;
+        }
+
+        const faceData = {
+          name: employeeName,
+          descriptor: detections.descriptor,
+        };
+
+        const existingFaces = JSON.parse(localStorage.getItem('registeredFaces') || '[]');
+        
+        // Check if the face already exists and replace it if necessary
+        const index = existingFaces.findIndex((face) => face.name === employeeName);
+        if (index !== -1) {
+          existingFaces[index] = faceData; // Replacing the existing face data
+        } else {
+          existingFaces.push(faceData); // Add new face data
+        }
+
+        localStorage.setItem('registeredFaces', JSON.stringify(existingFaces));
+        setRegisteredFaces(existingFaces);
+        setUploadStatus('✅ Passport uploaded/replaced successfully!');
+        setEmployeeName('');
       };
-
-      const existing = JSON.parse(localStorage.getItem('employees') || '[]');
-      existing.push(newEmployee);
-      localStorage.setItem('employees', JSON.stringify(existing));
-
-      setUploadStatus('✅ Passport uploaded and saved!');
-      setEmployeeName('');
-      setEmployees(existing); // update state to reflect the new employee
     };
 
     reader.readAsDataURL(file);
   };
 
-  return (
-    <div style={{ textAlign: 'center', padding: '40px' }}>
-      <h1>👑 Welcome to the Admin Dashboard</h1>
-      <p>Upload employee images and manage sign-in records.</p>
+  const handleDeletePassport = () => {
+    if (!deleteName.trim()) {
+      setUploadStatus('❌ Please provide an employee name to delete.');
+      return;
+    }
 
-      <div style={{ marginTop: '30px' }}>
-        <h3>Upload Employee Passport</h3>
+    const existingFaces = JSON.parse(localStorage.getItem('registeredFaces') || '[]');
+    const updatedFaces = existingFaces.filter((face) => face.name !== deleteName);
+
+    if (updatedFaces.length === existingFaces.length) {
+      setUploadStatus('❌ Employee not found.');
+      return;
+    }
+
+    localStorage.setItem('registeredFaces', JSON.stringify(updatedFaces));
+    setRegisteredFaces(updatedFaces);
+    setDeleteName('');
+    setUploadStatus('✅ Passport deleted successfully!');
+  };
+
+  return (
+    <div>
+      <h2>Admin Panel: Manage Employee Passports</h2>
+
+      <div>
+        <h4>Upload/Replace Passport</h4>
         <input
           type="text"
           placeholder="Employee Name"
           value={employeeName}
           onChange={(e) => setEmployeeName(e.target.value)}
-          style={{ padding: '5px', marginBottom: '10px' }}
+          className="form-control mb-2"
         />
-        <br />
-        <input type="file" accept="image/*" onChange={handleFileUpload} />
-        <p style={{ fontSize: '12px', color: '#666' }}>
-          Upload an image and enter the name to register the employee.
-        </p>
-        {uploadStatus && (
-          <p style={{ color: uploadStatus.startsWith('✅') ? 'green' : 'red' }}>
-            {uploadStatus}
-          </p>
-        )}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          className="form-control mb-2"
+        />
+        {uploadStatus && <p style={{ color: uploadStatus.startsWith('✅') ? 'green' : 'red' }}>{uploadStatus}</p>}
       </div>
 
-      <h2 style={{ marginTop: '50px' }}>Registered Employees</h2>
-      <ul>
-        {employees.map((emp, i) => (
-          <li key={i}>
-            {emp.name}
-          </li>
-        ))}
-      </ul>
+      <div>
+        <h4>Delete Passport</h4>
+        <input
+          type="text"
+          placeholder="Employee Name to Delete"
+          value={deleteName}
+          onChange={(e) => setDeleteName(e.target.value)}
+          className="form-control mb-2"
+        />
+        <button onClick={handleDeletePassport} className="btn btn-danger">
+          Delete Passport
+        </button>
+      </div>
+
+      <div>
+        <h4>Registered Faces</h4>
+        <ul>
+          {registeredFaces.map((face, index) => (
+            <li key={index}>
+              {face.name} - {face.descriptor ? '✔️ Registered' : '❌ Not Registered'}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
 
-export default AdminDashboard;
+export default AdminPanel;
