@@ -11,6 +11,7 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const router = useRouter();
 
+  // Load face-api.js models
   useEffect(() => {
     const loadModels = async () => {
       await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
@@ -21,12 +22,14 @@ export default function SignIn() {
 
     const videoElement = document.getElementById("videoElement");
 
+    // Stream webcam to video element
     const streamWebcam = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       videoElement.srcObject = stream;
     };
     streamWebcam();
 
+    // Cleanup function to stop webcam on component unmount
     return () => {
       const stream = videoElement?.srcObject;
       const tracks = stream?.getTracks();
@@ -34,6 +37,7 @@ export default function SignIn() {
     };
   }, []);
 
+  // Handle face scan and comparison with stored faces
   const handleScanFace = async () => {
     const videoElement = document.getElementById("videoElement");
     const detections = await faceapi
@@ -41,13 +45,17 @@ export default function SignIn() {
       .withFaceLandmarks()
       .withFaceDescriptor();
 
-    if (!detections) return;
+    if (!detections) {
+      setScannedResult("No face detected. Please try again.");
+      return;
+    }
 
     const inputDescriptor = detections.descriptor;
     const storedFaces = JSON.parse(localStorage.getItem("registeredFaces")) || [];
     let bestMatch = null;
     let smallestDistance = 1.0;
 
+    // Compare the input face descriptor with stored descriptors
     storedFaces.forEach((face) => {
       const distance = faceapi.euclideanDistance(inputDescriptor, new Float32Array(face.descriptor));
       if (distance < smallestDistance && distance < 0.5) {
@@ -61,7 +69,7 @@ export default function SignIn() {
       localStorage.setItem("loggedInUser", bestMatch);
       localStorage.setItem("loginTime", timestamp);
       setLoginTime(timestamp);
-      setScannedResult(`Welcome, ${bestMatch}`);
+      setScannedResult(`Welcome, ${bestMatch}!`);
       alert("Face matched! Login successful.");
       router.push("/dashboard");
     } else {
@@ -69,6 +77,7 @@ export default function SignIn() {
     }
   };
 
+  // Handle admin login with a fixed username and password
   const handleAdminLogin = () => {
     if (username === "admin" && password === "1234") {
       alert("Admin login successful.");
@@ -84,11 +93,18 @@ export default function SignIn() {
       <div className="card shadow-lg">
         <div className="card-body">
           <div className="mb-3 text-center">
-            <video id="videoElement" width="300" height="200" autoPlay muted className="border rounded" />
+            <video
+              id="videoElement"
+              width="300"
+              height="200"
+              autoPlay
+              muted
+              className="border rounded"
+            />
           </div>
 
           <button onClick={handleScanFace} className="btn btn-primary w-100">
-            Scan Face
+            Scan Face for Login
           </button>
 
           <hr className="my-4" />
