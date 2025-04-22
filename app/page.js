@@ -1,7 +1,6 @@
 "use client"; // Mark the component as client-side
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 

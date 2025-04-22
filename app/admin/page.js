@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 
-
 const AdminDashboard = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
