@@ -1,95 +1,68 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"; // Mark the component as client-side
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // Check localStorage for user login status on page load
+  useEffect(() => {
+    const userStatus = localStorage.getItem('loggedIn');
+    if (userStatus === 'true') {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  // Handle Log Out
+  const handleLogOut = () => {
+    localStorage.setItem('loggedIn', 'false');
+    setIsLoggedIn(false);
+    router.push('/'); // Redirect to homepage after logout
+  };
+
+  // Handle Log In (simulate login for demo purposes)
+  const handleLogIn = () => {
+    localStorage.setItem('loggedIn', 'true');
+    setIsLoggedIn(true);
+    router.push('/dashboard'); // Redirect to dashboard after login
+  };
+
+  return (
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <h1>Welcome to Logix</h1>
+      <p>Your sign-in and sign-out app</p>
+
+      {!isLoggedIn ? (
+        <div>
+          <p>Please sign in to access your account.</p>
+          <button
+            onClick={() => router.push('/signin')}
+            style={{ padding: '10px 20px', fontSize: '16px', marginRight: '10px' }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
+            Go to Sign In Page
+          </button>
+          <button
+            onClick={handleLogIn}
+            style={{ padding: '10px 20px', fontSize: '16px' }}
           >
-            Read our docs
-          </a>
+            Simulate Log In
+          </button>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      ) : (
+        <div>
+          <p>You are logged in!</p>
+          <button
+            onClick={handleLogOut}
+            style={{ padding: '10px 20px', fontSize: '16px' }}
+          >
+            Log Out
+          </button>
+        </div>
+      )}
     </div>
   );
 }
