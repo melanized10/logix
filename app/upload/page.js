@@ -7,11 +7,14 @@ export default function AdminUpload() {
   const [employeeName, setEmployeeName] = useState("");
   const [image, setImage] = useState(null);
 
-  const handleImageUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  // Handle image upload and face detection
+  const handleImageUpload = async () => {
+    if (!image) {
+      alert("Please upload an image.");
+      return;
+    }
 
-    const img = await faceapi.bufferToImage(file);
+    const img = await faceapi.bufferToImage(image);
     const detection = await faceapi
       .detectSingleFace(img)
       .withFaceLandmarks()
